@@ -1,107 +1,97 @@
-"use client";
-import { useState } from "react";
-import { account, ID } from "./appwrite";
-import Head from "next/head";
+import { useEffect } from "react";
+import { FcGoogle } from "react-icons/fc";
+import { AiFillGithub } from "react-icons/ai";
+import { VscWand } from "react-icons/vsc";
+import { account, client } from "./appwrite";
 
 const LoginPage = () => {
-  const [loggedInUser, setLoggedInUser] = useState<any>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState<string>("");
-
-  const login = async (email: string, password: string) => {
-    const session = await account.createEmailSession(email, password);
-    setLoggedInUser(await account.get());
+  const handleGoogleLogin = async () => {
+    try {
+      const redirectURL = `${window.location.origin}/auth/callback`; // Specify your callback URL
+      const googleOAuthUrl = await client.account.createOAuth2Session(
+        "google",
+        redirectURL
+      );
+      window.location.href = googleOAuthUrl.toString();
+    } catch (error) {
+      console.error("Google login error:", error);
+    }
   };
 
-  const register = async () => {
-    await account.create(ID.unique(), email, password, name);
-    login(email, password);
+  const handleGithubLogin = async () => {
+    try {
+      const redirectURL = `${window.location.origin}/auth/callback`; // Specify your callback URL
+      const githubOAuthUrl = await client.account.createOAuth2Session(
+        "github",
+        redirectURL
+      );
+      window.location.href = githubOAuthUrl.toString();
+    } catch (error) {
+      console.error("GitHub login error:", error);
+    }
   };
 
-  const logout = async () => {
-    await account.deleteSession("current");
-    setLoggedInUser(null);
-  };
+  useEffect(() => {
+    // Handle authentication callback (e.g., after successful Google or GitHub login)
+    const handleAuthCallback = async () => {
+      try {
+        const session = await client.account.createOAuth2Session();
+        await client.account.createOAuth2Account(
+          session.oauth2.state,
+          session.oauth2.code
+        );
+        // Redirect or handle the logged-in user as needed
+      } catch (error) {
+        console.error("Authentication callback error:", error);
+      }
+    };
 
-  const loginWithGoogle = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/oauth2/authorize?provider=google&redirect=${process.env.NEXT_PUBLIC_APPWRITE_SUCCESS_URL}`;
-  };
-
-  const loginWithGitHub = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/oauth2/authorize?provider=github&redirect=${process.env.NEXT_PUBLIC_APPWRITE_SUCCESS_URL}`;
-  };
+    if (window.location.pathname === "/auth/callback") {
+      handleAuthCallback();
+    }
+  }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Head>
-        <title>Login | Your App Name</title>
-        <meta name="description" content="Login to Your App Name" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <img
-            className="mx-auto h-12 w-auto"
-            src="/logo.png"
-            alt="Your App Name Logo"
-          />
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Log in to Your Account
-          </h2>
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center sm:py-12">
+      <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
+        <div className="bg-white shadow w-full rounded-lg divide-y divide-gray-200">
+          <div className="text-grey-700 mx-auto my-auto font-bold flex align-items-center justify-evenly py-5">
+            Login Using
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-3 gap-1">
+              <button
+                type="button"
+                className="gap-2 transition duration-200 border border-gray-200 text-gray-500 w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-normal flex align-items-center"
+                onClick={handleGoogleLogin}
+              >
+                <div className="flex align-items-center gap-1 justify-center mx-auto">
+                  <FcGoogle className="text-xl my-auto" />
+                  <p className="my-auto">Google</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="gap-2 transition duration-200 border border-gray-200 text-gray-500 w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-normal flex align-items-center"
+                onClick={handleGithubLogin}
+              >
+                <div className="flex align-items-center gap-1 justify-center mx-auto">
+                  <AiFillGithub className="text-xl my-auto text-black" />
+                  <p className="my-auto">Github</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="gap-2 transition duration-200 border border-gray-200 text-gray-500 w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-normal flex align-items-center"
+              >
+                <div className="flex align-items-center gap-1 justify-center mx-auto">
+                  <VscWand className="text-xl my-auto" />
+                  <p className="my-auto">Magic URL</p>{" "}
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
-        <form className="mt-8 space-y-6" action="#" method="POST">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-2 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-          />
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-2 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-          />
-          <button
-            type="button"
-            onClick={() => login(email, password)}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            onClick={register}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-          >
-            Register
-          </button>
-          <button
-            type="button"
-            onClick={loginWithGoogle}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          >
-            Login with Google
-          </button>
-          <button
-            type="button"
-            onClick={loginWithGitHub}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-          >
-            Login with GitHub
-          </button>
-        </form>
       </div>
     </div>
   );
