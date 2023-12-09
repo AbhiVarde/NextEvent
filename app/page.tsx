@@ -1,8 +1,7 @@
 import React from "react";
-import Navbar from "@/components/Navbar";
 
 const Home = () => {
-  return <div></div>;
+  return <div className="pt-[70px] min-h-screen">HomePage</div>;
 };
 
 export default Home;
